@@ -11,7 +11,8 @@ class Quiz extends Component {
     let riddle = this.playGame();
     let correct = false;
     let gameOver = false;
-    this.state = { riddle, correct, gameOver };
+    let highScore = localStorage.getItem("high-score") || 0;
+    this.state = { riddle, correct, gameOver, score: 0, highScore };
   }
   randomNumber(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -42,13 +43,15 @@ class Quiz extends Component {
 
     return resultsArray;
   }
-  playGame() {
-    let field1 = this.randomNumber(20, 40);
-    let field2 = this.randomNumber(20, 50);
+  playGame(difficulty = 0) {
+    let a = 20 + (10 + difficulty) * difficulty;
+    let b = 40 + (10 + difficulty) * difficulty;
+    let field1 = this.randomNumber(a, b);
+    let field2 = this.randomNumber(a, 10 + b);
     let result = field1 + field2;
     let resultsArray = this.generateRandomOptions(result);
     resultsArray.push(result);
-    resultsArray.sort(function(a, b) {
+    resultsArray.sort(function (a, b) {
       return 0.5 - Math.random();
     });
 
@@ -58,12 +61,12 @@ class Quiz extends Component {
       field2: field2,
       answer: result
     };
-    if(this.state && this.state.gameOver) {
-      this.setState({ riddle: riddle});
+    if (this.state && this.state.gameOver) {
+      this.setState({ riddle: riddle });
     } else {
       return riddle;
     }
-    
+
   }
   checkResults(option) {
     if (this.state.riddle.answer === option) {
@@ -93,8 +96,17 @@ class Quiz extends Component {
     }
   }
   playAgain() {
-    this.setState({ correct: false, gameOver: false});
-    this.playGame();
+    if (this.state.correct) {
+      this.state.score++;
+      if (this.state.score > this.state.highScore) {
+        this.state.highScore = this.state.score;
+        localStorage.setItem("high-score", this.state.highScore);
+      }
+    } else {
+      this.state.score = 0;
+    }
+    this.setState({ correct: false, gameOver: false, score: this.state.score });
+    this.playGame(this.state.score);
   }
   render() {
     return (
@@ -105,10 +117,13 @@ class Quiz extends Component {
             <span className='text-info'>{this.state.riddle.field1}</span> and{" "}
             <span className='text-info'>{this.state.riddle.field2}</span> ?{" "}
           </p>
+          <span>Score: {this.state.score}, High score: {this.state.highScore}</span>
           {this.renderOptions()}
-          <div className={`after ${this.state.correct ? 'correct animated zoomInUp': 'wrong animated zoomInDown'} ${!this.state.gameOver ? 'hide': ""}`}>{this.renderMessage()}</div>
+          <div className={`after ${this.state.correct ? 'correct animated zoomInUp' : 'wrong animated zoomInDown'} ${!this.state.gameOver ? 'hide' : ""}`}>{this.renderMessage()}</div>
           <div className='play-again'>
-            <a className='button' onClick={this.playAgain}>Play Again</a>
+            <a className='button' onClick={this.playAgain}>
+              {this.state.correct ? "Continue" : "Play Again"}
+            </a>
           </div>
         </div>
       </div>
